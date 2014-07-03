@@ -118,7 +118,7 @@
       gHost: { },
       dogfeed: { },
       dogtalk: { },
-      sharesome: { },
+      // sharesome: { img: 'none' },
       grouptabs: { },
       byoDB: { href: 'http://diafygi.github.io/byoDB/examples/diary/' },
       'time tracker': { href: 'http://shybyte.github.io/unhosted-time-tracker/', img: '/img/time.png' },
@@ -128,36 +128,34 @@
       music: { href: 'https://music-michiel.5apps.com/' },
       drinks: { href: 'https://drinks-unhosted.5apps.com/' },
       todo: { href: 'https://todomvc.5apps.com/labs/architecture-examples/remotestorage/' },
-      'dspace-client': { href: 'https://dspace-nilclass.5apps.com/' },
+      'dspace-client': { href: 'https://dspace-nilclass.5apps.com/', img: '/img/dspace.png' },
       strut: { href: 'http://tantaman.github.com/Strut/' },
       TiddlyWiki: { href: 'http://www.tiddlywiki.com/' },
       Fargo: { href: 'http://fargo.io/' },
-      Crypton: { href: 'http://crypton.io/' },
-      Dillinger: { href: 'http://dillinger.io/' },
-      'freedom js': { href: 'http://freedomjs.org/' },
-      'Peer CDN': { href: 'https://peercdn.com/' },
-      '+PeerServer': { href: 'http://www.peer-server.com/' },
-      Mylar: { href: 'http://css.csail.mit.edu/mylar/#Software' },
-      CryptoSphere: { href: 'http://cryptosphere.org/' },
-      editor: { href: 'https://editor-michiel.5apps.com/' },
-      social: { href: 'https://social-michiel.5apps.com/' },
-      email: { href: 'https://email-michiel.5apps.com/' },
-      smarkers: { href: 'https://smarker-nilclass.5apps.com/' },
+      // Crypton: { href: 'http://crypton.io/', img: 'none' },
+      // Dillinger: { href: 'http://dillinger.io/', img: 'none' },
+      // 'freedom js': { href: 'http://freedomjs.org/', img: 'none' },
+      // 'Peer CDN': { href: 'https://peercdn.com/', img: 'none' },
+      // '+PeerServer': { href: 'http://www.peer-server.com/', img: 'none' },
+      // Mylar: { href: 'http://css.csail.mit.edu/mylar/#Software', img: 'none' },
+      // CryptoSphere: { href: 'http://cryptosphere.org/', img: 'none' },
+      // editor: { href: 'https://editor-michiel.5apps.com/' },
+      // social: { href: 'https://social-michiel.5apps.com/' },
+      // email: { href: 'https://email-michiel.5apps.com/' },
+      // smarkers: { href: 'https://smarker-nilclass.5apps.com/' },
     };
     
     function createLi(key, obj) {
-      if (!obj.href) {
-        obj.href = 'https://'+key.toLowerCase()+'.5apps.com/';
-      }
-      if (!obj.img) {
-        obj.img = '/img/'+key.toLowerCase()+'.png';
-      }
-      if (!obj.name) {
-        obj.name = key;
-      }
-      return '<li> <a href="'
-        +obj.href+'"><img src="'
-        +obj.img+'" /></a><p><a href="'
+      obj.href = obj.href || 'https://'+key.toLowerCase()+'.5apps.com/';
+      obj.img = obj.img || '/img/'+key.toLowerCase()+'.png';
+      obj.name = obj.name || key;
+      return '<li>'
+        +(obj.img === 'none' ? '' :
+          '<a href="'
+          +obj.href+'"><img src="'
+          +obj.img+'" /></a>'
+        )
+        +'<p><a href="'
         +obj.href+'">'
         +obj.name+'</a></p></li>';
     }

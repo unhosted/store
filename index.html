@@ -11,7 +11,7 @@
   <body>
     <article>
       <p style="margin-bottom:3em">
-        <a href="https://github.com/unhosted/store"><strong>+ add yours</strong></a></p>
+        <a href="https://github.com/unhosted/store"><strong>+ add yours</strong></a> Connect to customize -></p>
       </p>
       <ul class="icons" id="apps-list">
        <li> <a href="http://litewrite.net"><img src="/img/litewrite.png" /></a>
@@ -105,6 +105,7 @@
 -->
     </article>      
   </body>
+  <script src="remotestorage.js"></script>
   <script>
     var apps = {
       litewrite: {
@@ -145,26 +146,38 @@
       // smarkers: { href: 'https://smarker-nilclass.5apps.com/' },
     };
     
-    function createLi(key, obj) {
+    function createLi(key, obj, userAddress) {
       obj.href = obj.href || 'https://'+key.toLowerCase()+'.5apps.com/';
       obj.img = obj.img || '/img/'+key.toLowerCase()+'.png';
       obj.name = obj.name || key;
+      var launchParam = (userAddress ? '#remotestorage='+encodeURIComponent(userAddress) : ''); 
       return '<li>'
         +(obj.img === 'none' ? '' :
           '<a href="'
-          +obj.href+'"><img src="'
+          +obj.href+launchParam+'"><img src="'
           +obj.img+'" /></a>'
         )
         +'<p><a href="'
-        +obj.href+'">'
+        +obj.href+launchParam+'">'
         +obj.name+'</a></p></li>';
     }
-    function refreshList() {
+    function refreshList(userAddress) {
       var innerHTML = '';
       for(var entry in apps) {
-        innerHTML += createLi(entry, apps[entry]);
+        innerHTML += createLi(entry, apps[entry], userAddress);
       }
       document.getElementById('apps-list').innerHTML = innerHTML;
     }
+    function init() {
+      RemoteStorage.config.logging = true;
+      remoteStorage.access.claim('apps', 'rw');
+      remoteStorage.displayWidget();
+      remoteStorage.on('connected', function() {
+        console.log('connected', remoteStorage.remote.userAddress);
+        refreshList(remoteStorage.remote.userAddress);
+      });
+    }
+    //...
+    init();
   </script>
 </html>

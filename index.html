@@ -13,7 +13,7 @@
       <p style="margin-bottom:3em">
         <a href="https://github.com/unhosted/store"><strong>+ add yours</strong></a></p>
       </p>
-      <ul class="icons">
+      <ul class="icons" id="apps-list">
        <li> <a href="http://litewrite.net"><img src="/img/litewrite.png" /></a>
           <p><a href="http://litewrite.net">litewrite</a></p>
         </li>
@@ -105,4 +105,68 @@
 -->
     </article>      
   </body>
+  <script>
+    var apps = {
+      litewrite: {
+        href: 'http://litewrite.net', // <-- optional; defaults to https://name.5apps.com/ (lowercased)
+        img: '/img/litewrite.png', // <-- optional; defaults to /img/name.png (lowercased)
+        name: 'litewrite' // <-- optional; defaults to name
+      },
+      Laverna: { href: 'https://laverna.cc/' },
+      mcnotes: { },
+      StackEdit: { href: 'https://stackedit.io/' },
+      gHost: { },
+      dogfeed: { },
+      dogtalk: { },
+      sharesome: { },
+      grouptabs: { },
+      byoDB: { href: 'http://diafygi.github.io/byoDB/examples/diary/' },
+      'time tracker': { href: 'http://shybyte.github.io/unhosted-time-tracker/', img: '/img/time.png' },
+      'svg-edit': { href: 'https://svg-edit.5apps.com/editor/svg-editor.html'},
+      browser: { href: 'https://remotestorage-browser.5apps.com/' },
+      vidmarks: { },
+      music: { href: 'https://music-michiel.5apps.com/' },
+      drinks: { href: 'https://drinks-unhosted.5apps.com/' },
+      todo: { href: 'https://todomvc.5apps.com/labs/architecture-examples/remotestorage/' },
+      'dspace-client': { href: 'https://dspace-nilclass.5apps.com/' },
+      strut: { href: 'http://tantaman.github.com/Strut/' },
+      TiddlyWiki: { href: 'http://www.tiddlywiki.com/' },
+      Fargo: { href: 'http://fargo.io/' },
+      Crypton: { href: 'http://crypton.io/' },
+      Dillinger: { href: 'http://dillinger.io/' },
+      'freedom js': { href: 'http://freedomjs.org/' },
+      'Peer CDN': { href: 'https://peercdn.com/' },
+      '+PeerServer': { href: 'http://www.peer-server.com/' },
+      Mylar: { href: 'http://css.csail.mit.edu/mylar/#Software' },
+      CryptoSphere: { href: 'http://cryptosphere.org/' },
+      editor: { href: 'https://editor-michiel.5apps.com/' },
+      social: { href: 'https://social-michiel.5apps.com/' },
+      email: { href: 'https://email-michiel.5apps.com/' },
+      smarkers: { href: 'https://smarker-nilclass.5apps.com/' },
+    };
+    
+    function createLi(key, obj) {
+      if (!obj.href) {
+        obj.href = 'https://'+key.toLowerCase()+'.5apps.com/';
+      }
+      if (!obj.img) {
+        obj.img = '/img/'+key.toLowerCase()+'.png';
+      }
+      if (!obj.name) {
+        obj.name = key;
+      }
+      return '<li> <a href="'
+        +obj.href+'"><img src="'
+        +obj.img+'" /></a><p><a href="'
+        +obj.href+'">'
+        +obj.name+'</a></p></li>';
+    }
+    function refreshList() {
+      var innerHTML = '';
+      for(var entry in apps) {
+        innerHTML += createLi(entry, apps[entry]);
+      }
+      document.getElementById('apps-list').innerHTML = innerHTML;
+    }
+  </script>
 </html>

@@ -81,7 +81,12 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
     }
     privClient.cache('', 'ALL');
     privClient.on('change', function(evt) {
-      apps[evt.relativePath] = evt.newValue;
+      if (evt.newValue) {
+        apps[evt.relativePath] = evt.newValue;
+      } else {
+        delete apps[evt.relativePath];
+      }
+      console.log('calling changeHandler with', apps, evt);
       changeHandler(apps);
     });
   }

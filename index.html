@@ -11,7 +11,7 @@
   <body>
     <article>
       <p style="margin-bottom:3em">
-        <input type="button" value="INSTALL NEW APPS" onclick="showInstall();" />
+        <input type="button" id="install-button" value="INSTALL NEW APPS" onclick="toggleShowInstall();" />
         <a href="https://github.com/unhosted/store#add"><strong>+ add your app to the store</strong></a> Connect to sync -></p>
       </p>
       <ul class="icons install hidden" id="apps-install">
@@ -66,8 +66,18 @@
       }
       document.getElementById('apps-install').innerHTML = innerHTML;
     }
-    function showInstall() {
-      document.getElementById('apps-install').classList.remove('hidden');
+    function toggleShowInstall() {
+      var classList = document.getElementById('apps-install').classList
+      classList.toggle('hidden');
+      if (classList.contains('hidden')) {
+        document.getElementById('install-button').value = 'INSTALL NEW APPS'; 
+      } else {
+        document.getElementById('install-button').value = 'DONE'; 
+      }
+    }
+    function hideInstall() {
+      document.getElementById('apps-install').
+      document.getElementById('apps-install').classList.add('hidden');
     }
     function installApp(name) {
       remoteStorage.apps.installApp(name);

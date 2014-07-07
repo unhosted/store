@@ -1,3 +1,10 @@
+/**
+ * File: Apps
+ *
+ * Maintainer: Michiel de Jong <michiel@unhosted.org>
+ * Version: -    0.1.0
+ *
+ */
 RemoteStorage.defineModule('apps', function(privClient, pubClient) {
   var apps = {},
     defaultApps = {
@@ -38,6 +45,10 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
       // email: { href: 'https://email-michiel.5apps.com/' },
       // smarkers: { href: 'https://smarker-nilclass.5apps.com/' },
     };
+  
+  var changeHandler = function() {
+    console.log('Please call remoteStorage.apps.onChange(handler)');
+  };
 
   function fillInBlanks(key, obj) {
     obj.href = obj.href || 'https://'+key.toLowerCase()+'.5apps.com/';
@@ -45,40 +56,62 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
     obj.name = obj.name || key;
     return obj;
   }
+
+
+  /**
+   * Function: remoteStorage.apps.installApp
+   *
+   * Add an app to the user's list of installed apps. Will trigger
+   * the change handler to be called if you previously set one using
+   * `remoteStorage.apps.onChange(handler);`.
+   *
+   * Parameters:
+   *   name - name of the app (key in the defaultApps dictionary)
+   */
   function installApp(name) {
     apps[name] = defaultApps[name];
     privClient.storeObject('app', name, apps[name]);
   }
+
+  /**
+   * Function: remoteStorage.apps.uninstallApp
+   *
+   * Remove an app to the user's list of installed apps. Will trigger
+   * the change handler to be called if you previously set one using
+   * `remoteStorage.apps.onChange(handler);`.
+   *
+   * Parameters:
+   *   name - name of the app (key in the defaultApps dictionary)
+   */
   function uninstallApp(name) {
     delete apps[name];
     privClient.remove(name);
   }
-  function getApps() {
-    return apps;
-  }
 
-  //...
-  RemoteStorage.config.changeEvents.window = true;
-  
-  privClient.declareType('app', {
-    type: 'object',
-    properties: {
-      name: { type: 'string' },
-      href: { type: 'string' },
-      img: { type: 'string' }
-    },
-    required: ['name']
-  });
-  var changeHandler = function() {
-    console.log('Please call remoteStorage.apps.onChange(handler)');
-  };
+  /**
+   * Function: remoteStorage.apps.onChange
+   *
+   * Set the change event handler. This will be called, with the
+   * dictionary of installed apps as the only argument, whenever the
+   * list of installed apps changes. Example:
+   *
+   * remoteStorage.apps.onChange(function(apps) {
+   *   myAppsView.reset();
+   *   for (var i in apps) {
+   *     myAppsView.add(apps[i]);
+   *   }
+   *   myAppsView.render();
+   * });
+   *
+   * Parameters:
+   *   handler - a Function that takes a dictionary of apps as its only argument
+   */
   function onChange(handler) {
     changeHandler = handler;
   }
+
   function init() {
-    for (var i in defaultApps) {
-      defaultApps[i] = fillInBlanks(i, defaultApps[i]);
-    }
+    RemoteStorage.config.changeEvents.window = true;
     privClient.cache('', 'ALL');
     privClient.on('change', function(evt) {
       if (evt.newValue) {
@@ -89,12 +122,59 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
       console.log('calling changeHandler with', apps, evt);
       changeHandler(apps);
     });
+    
+    /**
+     * Schema: apps/app
+     *
+     * Info necessary for displaying a link to an app in an app store
+     *
+     * name - the name of the app that's being described here (string)
+     * href - launch URL (string)
+     * img - URL of a 128x128px app icon (string)
+     */
+    privClient.declareType('app', {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        href: { type: 'string' },
+        img: { type: 'string' }
+      },
+      required: ['name']
+    });
+
+    for (var i in defaultApps) {
+      defaultApps[i] = fillInBlanks(i, defaultApps[i]);
+    }
   }
   
+  /**
+   * Function: remoteStorage.apps.getInstalledApps
+   *
+   * Get a dictionary of apps whihch the user has installed.
+   *
+   * Parameters:
+   *   (none)
+   *
+   * Returns: A dictionary from string app names to objects that follow the
+   *              apps/app schema defined above.
+   */
   function getInstalledApps() {
     return apps;
   }
  
+  
+  /**
+   * Function: remoteStorage.apps.getAvailableApps
+   *
+   * Get a dictionary of apps whihch the user does not have installed, but
+   * which are available to install.
+   *
+   * Parameters:
+   *   (none)
+   *
+   * Returns: A dictionary from string app names to objects that follow the
+   *              apps/app schema defined above.
+   */
   function getAvailableApps() {
     var i, availableApps = {};
     for (i in defaultApps) {
@@ -107,12 +187,13 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
 
   //...
   init();
+
   return {
     exports: {
       onChange: onChange,
       installApp: installApp,
       uninstallApp: uninstallApp,
-      getInstalledApps: function() { return apps; },
+      getInstalledApps: getInstalledApps,
       getAvailableApps: getAvailableApps
     }
   };

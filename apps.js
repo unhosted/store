@@ -46,8 +46,8 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
     return obj;
   }
   function installApp(name) {
-    app[name] = defaultApps[name];
-    privClient.storeObject('app', name, obj);
+    apps[name] = defaultApps[name];
+    privClient.storeObject('app', name, apps[name]);
   }
   function uninstallApp(name) {
     delete apps[name];
@@ -76,6 +76,9 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
     changeHandler = handler;
   }
   function init() {
+    for (var i in defaultApps) {
+      defaultApps[i] = fillInBlanks(i, defaultApps[i]);
+    }
     privClient.cache('', 'ALL');
     privClient.on('change', function(evt) {
       apps[evt.relativePath] = evt.newValue;

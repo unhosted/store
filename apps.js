@@ -152,7 +152,7 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
     xhr.open('GET', assetBase+assetPath, true);
     xhr.responseType = 'arraybuffer';
     xhr.onload = function() {
-      publicClient.storeFile(xhr.getResponseHeader('Content-Type'), 'assets/'+appName+'/'+assetPath, xhr.response);
+      pubClient.storeFile(xhr.getResponseHeader('Content-Type'), 'assets/'+appName+'/'+assetPath, xhr.response);
     };
     xhr.send();
   }
@@ -169,6 +169,7 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
       var urlParts = manifestUrl.split('/');
       urlParts.pop();
       var assetBase = urlParts.join('/')+'/';
+      console.log('got manifest', manifestUrl, obj);
       if (Array.isArray(obj.assets)) {
         for (var i=0; i<obj.assets.length; obj++) {
           getAsset(obj.name, assetBase, obj.assets[i]);

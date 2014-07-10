@@ -5,26 +5,31 @@
     <meta charset="utf-8" />
     <meta name="description" content="example unhosted web apps" />
     <title>unhosted web apps: example apps</title>
-    <link rel="stylesheet" href="adventures.css" />
+    <link rel="stylesheet" href="store.css" />
   </head>
 
   <body>
     <article>
       <p style="margin-bottom:3em">
-        <a href="https://github.com/unhosted/store"><strong>+ add yours</strong></a> Connect to customize -></p>
+        <input type="button" id="install-button" value="INSTALL NEW APPS" onclick="toggleShowInstall();" />
+        <a href="https://github.com/unhosted/store#add"><strong>+ add your app to the store</strong></a> Connect to sync -></p>
       </p>
+      <ul class="icons install hidden" id="apps-install">
+        <p id="no-apps-placeholder">(no more apps available to install)</p>
+      </ul>
       <ul class="icons" id="apps-list">
+        <p id="no-apps-placeholder">(loading...)</p>
       </ul>
     </article>      
   </body>
   <script src="remotestorage.js"></script>
   <script src="apps.js"></script>
-  <script>    
+  <script>
     function createLi(key, obj, userAddress) {
-      var launchParam = '', removeButton = '';
+      var launchParam = '', uninstallButton = '';
       if (userAddress) {
         launchParam = '#remotestorage='+encodeURIComponent(userAddress);
-        removeButton = ' (<a onclick="removeApp(\''+obj.name+'\');">X</a>)';
+        uninstallButton = ' (<a onclick="uninstallApp(\''+obj.name+'\');">X</a>)';
       }
       return '<li>'
         +(obj.img === 'none' ? '' :
@@ -35,7 +40,17 @@
         +'<p><a href="'
         +obj.href+launchParam+'">'
         +obj.name+'</a>'
-        +removeButton+'</p></li>';
+        +uninstallButton+'</p></li>';
+    }
+    function createInstallLi(key, obj, userAddress) {
+      return '<li onclick="installApp(\''+obj.name+'\');">'
+        +(obj.img === 'none' ? '' :
+          '<img src="'
+          +obj.img+'" />'
+        )
+        +'<p>'
+        +obj.name
+        +'</p></li>';
     }
     function refreshList(apps, userAddress) {
       var innerHTML = '';
@@ -44,16 +59,46 @@
       }
       document.getElementById('apps-list').innerHTML = innerHTML;
     }
-    function removeApp(name) {
-      remoteStorage.scope('/apps/').remove(name);
+    function refreshInstallList(apps, userAddress) {
+      var innerHTML = '';
+      for(var entry in apps) {
+        innerHTML += createInstallLi(entry, apps[entry], userAddress);
+      }
+      document.getElementById('apps-install').innerHTML = innerHTML;
+    }
+    function toggleShowInstall() {
+      var classList = document.getElementById('apps-install').classList
+      classList.toggle('hidden');
+      if (classList.contains('hidden')) {
+        document.getElementById('install-button').value = 'INSTALL NEW APPS'; 
+      } else {
+        document.getElementById('install-button').value = 'DONE'; 
+      }
+    }
+    function hideInstall() {
+      document.getElementById('apps-install').
+      document.getElementById('apps-install').classList.add('hidden');
+    }
+    function installApp(name) {
+      remoteStorage.apps.installApp(name);
+    }
+    function uninstallApp(name) {
+      remoteStorage.apps.uninstallApp(name);
     }
     function init() {
       RemoteStorage.config.logging = true;
       remoteStorage.access.claim('apps', 'rw');
       remoteStorage.displayWidget();
+      remoteStorage.on('ready', function() {
+        remoteStorage.local.on('local-events-done', function() {
+          document.getElementById('no-apps-placeholder').innerHTML = '(no apps yet)';
+        });
+      });
       remoteStorage.apps.onChange(function(apps) {
         refreshList(apps, remoteStorage.remote.userAddress);
+        refreshInstallList(remoteStorage.apps.getAvailableApps());
       });
+      refreshInstallList(remoteStorage.apps.getAvailableApps());
     }
     //...
     init();

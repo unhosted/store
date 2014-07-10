@@ -84,13 +84,43 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
       privClient.storeObject('app', name, fillInBlanks(name, apps[name]));
     }
   }
+  function getAsset(appName, assetBase, assetPath) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', assetBase+assetPath, true);
+    xhr.responseType = 'arraybuffer';
+    xhr.onload = function() {
+      publicClient.storeFile(xhr.getResponseHeader('Content-Type'), 'assets/'+appName+'/'+assetPath, xhr.response);
+    };
+    xhr.send();
+  }
+  function cloneApp(manifestUrl) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', manifestUrl, true);
+    xhr.onload = function() {
+      var obj = {};
+      try {
+        obj = JSON.parse(xhr.responseText);
+      } catch (e) {
+      }
+      var urlParts = manifestUrl.split('/');
+      urlParts.pop();
+      var assetBase = urlParts.join('/')+'/';
+      if (Array.isArray(obj.assets)) {
+        for (var i=0; i<obj.assets.length; obj++) {
+          getAsset(obj.name, assetBase, obj.assets[i]);
+        }
+      }
+    };
+    xhr.send();
+  }
   //...
   init();
   return {
     exports: {
       onChange: onChange,
       addApp: addApp,
-      removeApp: removeApp
+      removeApp: removeApp,
+      cloneApp: cloneApp
     }
   };
 });

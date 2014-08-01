@@ -8,6 +8,8 @@ header { margin-top: 50px; margin-bottom:100px; line-height:1.0em; color:#666 }
 
 #install-button { width: 70%; margin-left: 15%; margin-top: 2em; height: 5em; background-color:#0EF; border-radius: 1em }
 
+.uninstall-button { color: red }
+
 article { background-color: #EEE; border-radius:1em; float:right; width: 40em; max-width:600px; margin:10px 10px 40px 10px}
 
 article h2 { margin-top: 5em }

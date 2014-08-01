@@ -32,8 +32,8 @@ To sync your installed apps across multiple devices, connect your remote storage
       var launchParam = '', uninstallButton = '';
       if (userAddress) {
         launchParam = '#remotestorage='+encodeURIComponent(userAddress);
-        uninstallButton = ' (<a onclick="uninstallApp(\''+obj.name+'\');">X</a>)';
       }
+      uninstallButton = ' (<span class="uninstall-button" onclick="uninstallApp(\''+obj.name+'\');"><strong>&times;</strong></span>)';
       return '<li>'
         +(obj.img === 'none' ? '' :
           '<a href="'

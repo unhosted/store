@@ -70,15 +70,17 @@ To sync your installed apps across multiple devices, connect your remote storage
       document.getElementById('apps-install').innerHTML = innerHTML;
     }
     function toggleShowInstall() {
-      ['apps-install', 'apps-list'].each(function(eltName) {
+      ['apps-install', 'apps-list'].forEach(function(eltName) {
         var classList = document.getElementById(eltName).classList
         classList.toggle('hidden');
+        if (eltName === 'apps-install') {
+          if (classList.contains('hidden')) {
+            document.getElementById('install-button').value = 'INSTALL NEW APPS';
+          } else {
+            document.getElementById('install-button').value = 'DONE';
+          }
+        }
       });
-      if (classList.contains('hidden')) {
-        document.getElementById('install-button').value = 'INSTALL NEW APPS'; 
-      } else {
-        document.getElementById('install-button').value = 'DONE'; 
-      }
     }
     function hideInstall() {
       document.getElementById('apps-install').

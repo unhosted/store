@@ -14,6 +14,12 @@
         <a href="https://unhosted.org/">
           <img src="https://unhosted.org/img/island-color.png">
         </a>
+       <p>
+         App channel:
+         <input id="channel-url-input" style="width:25em" value="https://apps.unhosted.org/defaultApps.json"
+             onkeydown="if(event.keyCode === 13){fetchChannel();}"/>
+         <input id="channel-url-button" type="submit" value="update" onclick="fetchChannel();"/>
+        </p>
       </div>
       <p style="margin-bottom:3em">
         <input type="button" id="install-button" value="INSTALL NEW UNHOSTED WEB APPS" onclick="toggleShowInstall();" />
@@ -27,9 +33,6 @@ To sync your installed apps across multiple devices, <strong>connect your remote
       <ul class="icons" id="apps-list">
         <p id="no-apps-placeholder">(loading...)</p>
       </ul>
-      <p class="top-paragraph" style="font-size:small;text-align:center">
-        (<a href="https://github.com/unhosted/store#add">instructions for app developers</a>)
-      </p>
     </article>      
   </body>
   <script src="remotestorage.js"></script>
@@ -99,8 +102,21 @@ To sync your installed apps across multiple devices, <strong>connect your remote
     function uninstallApp(name) {
       remoteStorage.apps.uninstallApp(name);
     }
+    function fetchChannel() {
+      try {
+        remoteStorage.apps.setAppChannel(document.getElementById('channel-url-input').value).then(function(obj) {
+          console.log('app channel set', obj);
+          document.getElementById('channel-url-button').value = 'update';
+        }, function() {
+          document.getElementById('channel-url-button').value = '(failed)';
+        });
+      } catch(e) {
+        document.getElementById('channel-url-button').value = '(failed)';
+      }
+      document.getElementById('channel-url-button').value = '(updating)';
+    }
     function init() {
-      RemoteStorage.config.logging = true;
+      RemoteStorage.config.logging = false;
       remoteStorage.access.claim('apps', 'rw');
       remoteStorage.displayWidget();
       remoteStorage.on('ready', function() {
@@ -110,7 +126,7 @@ To sync your installed apps across multiple devices, <strong>connect your remote
           }
         });
       });
-      remoteStorage.apps.init('/defaultApps.json');
+      fetchChannel();
       remoteStorage.apps.onChange(function(apps) {
         refreshList(apps, remoteStorage.remote.userAddress);
         remoteStorage.apps.getAvailableApps(refreshInstallList);

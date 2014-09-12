@@ -7,7 +7,7 @@
  */
 RemoteStorage.defineModule('apps', function(privClient, pubClient) {
   var apps = {},
-    defaultApps, defaultAppsUrl;
+    defaultApps = {}, channelUrl, currentChannel;
   
   var changeHandler = function() {
     console.log('Please call remoteStorage.apps.onChange(handler)');
@@ -20,24 +20,57 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
     return obj;
   }
 
-  function loadDefaultApps(cb) {
-    if (defaultApps) {
-      cb();
-      return;
-    }
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', defaultAppsUrl, true);
-    xhr.responseType = 'json';
-    xhr.onload = function() {
-      defaultApps = {};
-      for (var i in xhr.response) {
-        defaultApps[i] = fillInBlanks(i, xhr.response[i]);
+  function setAppChannel(channelUrl) {
+    var promise = promising();
+    privClient.storeFile('plain/txt', 'channel-url', channelUrl).then(function() {
+      fetchDefaultApps(function(err) {
+        if (err) {
+          promise.reject(err);
+        } else {
+          promise.fulfill();
+        }
+      });
+    }, function() {
+      promise.reject();
+    });
+    return promise;
+  }
+
+  function fetchDefaultApps(cb) {
+    privClient.getFile('channel-url').then(function(obj) {
+      var channelUrl = obj.data;
+      if (typeof channelUrl !== 'string') {
+        channelUrl = 'https://store.unhosted.org/defaultApps.json';
+        setAppChannel(channelUrl);
       }
-      if (cb) {
+      if (currentChannel === channelUrl) {
         cb();
+        return;
       }
-    };
-    xhr.send();
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', channelUrl, true);
+      xhr.responseType = 'json';
+      xhr.onerror = function() {
+        cb('error fetching app list');
+      };
+      xhr.onload = function() {
+        if (xhr.response === null) {
+          if (cb) {
+            cb('not json');
+          }
+          return;
+        }
+        defaultApps = {};
+        for (var i in xhr.response) {
+          defaultApps[i] = fillInBlanks(i, xhr.response[i]);
+        }
+        currentChannel = channelUrl;
+        if (cb) {
+          cb();
+        }
+      };
+      xhr.send();
+    });
   }
 
   /**
@@ -92,18 +125,17 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
     changeHandler = handler;
   }
 
-  function init(url) {
-    defaultAppsUrl = url;
-    loadDefaultApps();
+  function init() {
     RemoteStorage.config.changeEvents.window = true;
     privClient.cache('', 'ALL');
     privClient.on('change', function(evt) {
-      if (evt.newValue) {
-        apps[evt.relativePath] = evt.newValue;
-      } else {
-        delete apps[evt.relativePath];
+      if (evt.relativePath !== 'channel-url') {
+        if (evt.newValue) {
+          apps[evt.relativePath] = evt.newValue;
+        } else {
+          delete apps[evt.relativePath];
+        }
       }
-      console.log('calling changeHandler with', apps, evt);
       changeHandler(apps);
     });
     
@@ -149,7 +181,6 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
       var urlParts = manifestUrl.split('/');
       urlParts.pop();
       var assetBase = urlParts.join('/')+'/';
-      console.log('got manifest', manifestUrl, obj);
       if (Array.isArray(obj.assets)) {
         for (var i=0; i<obj.assets.length; obj++) {
           getAsset(obj.name, assetBase, obj.assets[i]);
@@ -188,21 +219,25 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
    *              apps/app schema defined above.
    */
   function getAvailableApps(cb) {
-    loadDefaultApps(function() {
+    fetchDefaultApps(function() {
       var i, availableApps = {};
       for (i in defaultApps) {
         if (!apps[i]) {
           availableApps[i] = defaultApps[i];
         }
       }
+      console.log('available apps', availableApps);
       cb(availableApps);
     });
   }
 
+  //...
+  init();
+
   return {
     exports: {
-      init: init,
       onChange: onChange,
+      setAppChannel: setAppChannel,
       installApp: installApp,
       uninstallApp: uninstallApp,
       getInstalledApps: getInstalledApps,

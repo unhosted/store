@@ -7,44 +7,7 @@
  */
 RemoteStorage.defineModule('apps', function(privClient, pubClient) {
   var apps = {},
-    defaultApps = {
-      litewrite: {
-        href: 'http://litewrite.net', // <-- optional; defaults to https://name.5apps.com/ (lowercased)
-        img: '/img/litewrite.png', // <-- optional; defaults to /img/name.png (lowercased)
-        name: 'litewrite' // <-- optional; defaults to name
-      },
-      Laverna: { href: 'https://laverna.cc/' },
-      mcnotes: { },
-      //(no rs) StackEdit: { href: 'https://stackedit.io/' },
-      gHost: { },
-      dogfeed: { },
-      dogtalk: { },
-      // sharesome: { img: 'none' },
-      grouptabs: { },
-      byoDB: { href: 'http://diafygi.github.io/byoDB/examples/diary/' },
-      'time tracker': { href: 'http://shybyte.github.io/unhosted-time-tracker/', img: '/img/time.png' },
-      'svg-edit': { href: 'https://svg-edit.5apps.com/editor/svg-editor.html'},
-      browser: { href: 'https://remotestorage-browser.5apps.com/' },
-      vidmarks: { },
-      music: { href: 'https://music-michiel.5apps.com/' },
-      drinks: { href: 'https://myfavoritedrinks.5apps.com/' },
-      todo: { href: 'https://todomvc.5apps.com/labs/architecture-examples/remotestorage/' },
-      'dspace-client': { href: 'https://dspace-nilclass.5apps.com/', img: '/img/dspace.png' },
-      strut: { href: 'http://tantaman.github.com/Strut/' },
-      //(no rs) TiddlyWiki: { href: 'http://www.tiddlywiki.com/' },
-      //(no rs) Fargo: { href: 'http://fargo.io/' },
-      // Crypton: { href: 'http://crypton.io/', img: 'none' },
-      // Dillinger: { href: 'http://dillinger.io/', img: 'none' },
-      // 'freedom js': { href: 'http://freedomjs.org/', img: 'none' },
-      // 'Peer CDN': { href: 'https://peercdn.com/', img: 'none' },
-      // '+PeerServer': { href: 'http://www.peer-server.com/', img: 'none' },
-      // Mylar: { href: 'http://css.csail.mit.edu/mylar/#Software', img: 'none' },
-      // CryptoSphere: { href: 'http://cryptosphere.org/', img: 'none' },
-      // editor: { href: 'https://editor-michiel.5apps.com/' },
-      // social: { href: 'https://social-michiel.5apps.com/' },
-      // email: { href: 'https://email-michiel.5apps.com/' },
-      // smarkers: { href: 'https://smarker-nilclass.5apps.com/' },
-    };
+    defaultApps, defaultAppsUrl;
   
   var changeHandler = function() {
     console.log('Please call remoteStorage.apps.onChange(handler)');
@@ -57,6 +20,25 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
     return obj;
   }
 
+  function loadDefaultApps(cb) {
+    if (defaultApps) {
+      cb();
+      return;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', defaultAppsUrl, true);
+    xhr.responseType = 'json';
+    xhr.onload = function() {
+      defaultApps = {};
+      for (var i in xhr.response) {
+        defaultApps[i] = fillInBlanks(i, xhr.response[i]);
+      }
+      if (cb) {
+        cb();
+      }
+    };
+    xhr.send();
+  }
 
   /**
    * Function: remoteStorage.apps.installApp
@@ -110,7 +92,9 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
     changeHandler = handler;
   }
 
-  function init() {
+  function init(url) {
+    defaultAppsUrl = url;
+    loadDefaultApps();
     RemoteStorage.config.changeEvents.window = true;
     privClient.cache('', 'ALL');
     privClient.on('change', function(evt) {
@@ -141,10 +125,6 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
       },
       required: ['name']
     });
-
-    for (var i in defaultApps) {
-      defaultApps[i] = fillInBlanks(i, defaultApps[i]);
-    }
   }
 
   function getAsset(appName, assetBase, assetPath) {
@@ -207,21 +187,21 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
    * Returns: A dictionary from string app names to objects that follow the
    *              apps/app schema defined above.
    */
-  function getAvailableApps() {
-    var i, availableApps = {};
-    for (i in defaultApps) {
-      if (!apps[i]) {
-        availableApps[i] = defaultApps[i];
+  function getAvailableApps(cb) {
+    loadDefaultApps(function() {
+      var i, availableApps = {};
+      for (i in defaultApps) {
+        if (!apps[i]) {
+          availableApps[i] = defaultApps[i];
+        }
       }
-    } 
-    return availableApps;
+      cb(availableApps);
+    });
   }
-
-  //...
-  init();
 
   return {
     exports: {
+      init: init,
       onChange: onChange,
       installApp: installApp,
       uninstallApp: uninstallApp,

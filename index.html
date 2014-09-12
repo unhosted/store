@@ -105,14 +105,17 @@ To sync your installed apps across multiple devices, <strong>connect your remote
       remoteStorage.displayWidget();
       remoteStorage.on('ready', function() {
         remoteStorage.local.on('local-events-done', function() {
-          document.getElementById('no-apps-placeholder').innerHTML = '(no apps yet)';
+          if (document.getElementById('no-apps-placeholder')) {
+            document.getElementById('no-apps-placeholder').innerHTML = '(no apps yet)';
+          }
         });
       });
+      remoteStorage.apps.init('/defaultApps.json');
       remoteStorage.apps.onChange(function(apps) {
         refreshList(apps, remoteStorage.remote.userAddress);
-        refreshInstallList(remoteStorage.apps.getAvailableApps());
+        remoteStorage.apps.getAvailableApps(refreshInstallList);
       });
-      refreshInstallList(remoteStorage.apps.getAvailableApps());
+      remoteStorage.apps.getAvailableApps(refreshInstallList);
     }
     //...
     init();

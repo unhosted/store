@@ -12,7 +12,7 @@
     <article>
       <div style="text-align:center">
         <a href="https://unhosted.org/">
-          <img src="https://unhosted.org/img/island-color.png">
+          <img src="island-color.png">
         </a>
        <p>
          App channel:
@@ -129,9 +129,9 @@ To sync your installed apps across multiple devices, <strong>connect your remote
       fetchChannel();
       remoteStorage.apps.onChange(function(apps) {
         refreshList(apps, remoteStorage.remote.userAddress);
-        remoteStorage.apps.getAvailableApps(refreshInstallList);
+        remoteStorage.apps.getAvailableApps().then(refreshInstallList);
       });
-      remoteStorage.apps.getAvailableApps(refreshInstallList);
+      remoteStorage.apps.getAvailableApps().then(refreshInstallList);
     }
     //...
     init();

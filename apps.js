@@ -13,63 +13,89 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
     console.log('Please call remoteStorage.apps.onChange(handler)');
   };
 
-  function fillInBlanks(key, obj) {
-    obj.href = obj.href || 'https://'+key.toLowerCase()+'.5apps.com/';
-    obj.img = obj.img || '/img/'+key.toLowerCase()+'.png';
-    obj.name = obj.name || key;
-    return obj;
-  }
-
-  function setAppChannel(channelUrl) {
-    var promise = promising();
-    privClient.storeFile('plain/txt', 'channel-url', channelUrl).then(function() {
-      fetchDefaultApps(function(err) {
-        if (err) {
-          promise.reject(err);
-        } else {
-          promise.fulfill();
-        }
-      });
-    }, function() {
-      promise.reject();
-    });
+  function fetchManifest(manifestUrl) {
+    var promise = promising(),
+    xhr = new XMLHttpRequest();
+    xhr.open('GET', manifestUrl, true);
+    xhr.responseType = 'json';
+    xhr.onload = function() {
+      if (xhr.response === null) {
+        promise.reject('could not fetch JSON document from ' + manifestUrl);
+      } else {
+        promise.fulfill(xhr.response);
+      }
+    };
+    xhr.onerror = function() {
+      promise.reject('could not fetch ' + manifestUrl);
+    };
+    xhr.send();
     return promise;
   }
 
-  function fetchDefaultApps(cb) {
-    privClient.getFile('channel-url').then(function(obj) {
+  function fillInBlanks(key, obj) {
+    var promise;
+    if (obj.manifest) {
+      return fetchManifest(obj.manifest);
+    }
+    promise = promising();
+    obj.href = obj.href || 'https://'+key.toLowerCase()+'.5apps.com/';
+    obj.img = obj.img || '/img/'+key.toLowerCase()+'.png';
+    obj.name = obj.name || key;
+    promise.fulfill(obj);
+    return promise;
+  }
+
+  function setAppChannel(channelUrl) {
+    return privClient.storeFile('plain/txt', 'channel-url', channelUrl).then(function() {
+      return fetchDefaultApps();
+    });
+  }
+
+  function fetchDefaultApps() {
+    return privClient.getFile('channel-url').then(function(obj) {
+      var promise = promising();
       var channelUrl = obj.data;
       if (typeof channelUrl !== 'string') {
         channelUrl = 'https://store.unhosted.org/defaultApps.json';
         setAppChannel(channelUrl);
       }
       if (currentChannel === channelUrl) {
-        cb();
+        promise.fulfill();
         return;
       }
       var xhr = new XMLHttpRequest();
       xhr.open('GET', channelUrl, true);
       xhr.responseType = 'json';
       xhr.onerror = function() {
-        cb('error fetching app list');
+        promise.reject('error fetching app list');
       };
       xhr.onload = function() {
+        var numRunning = 0;
         if (xhr.response === null) {
-          if (cb) {
-            cb('not json');
-          }
+          promise.reject('not json');
           return;
         }
         defaultApps = {};
         for (var i in xhr.response) {
-          defaultApps[i] = fillInBlanks(i, xhr.response[i]);
+          numRunning++;
+          fillInBlanks(i, xhr.response[i]).then(function(obj) {
+            defaultApps[i] = obj;
+            numRunning--;
+            if (numRunning === 0) {
+              promise.fulfill();
+            }
+          }, function() {
+            numRunning--;
+            if (numRunning === 0) {
+              promise.fulfill();
+            }
+          });
         }
         currentChannel = channelUrl;
-        if (cb) {
-          cb();
-        }
+        promise.fulfill();
       };
       xhr.send();
+      return promise;
     });
   }
 
@@ -160,34 +186,59 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
   }
 
   function getAsset(appName, assetBase, assetPath) {
+    var promise = promising();
     var xhr = new XMLHttpRequest();
     xhr.open('GET', assetBase+assetPath, true);
     xhr.responseType = 'arraybuffer';
     xhr.onload = function() {
-      pubClient.storeFile(xhr.getResponseHeader('Content-Type'), 'assets/'+appName+'/'+assetPath, xhr.response);
+      pubClient.storeFile(xhr.getResponseHeader('Content-Type'), 'assets/'+appName+'/'+assetPath, xhr.response).then(function() {
+        promise.fulfill();
+      }, function() {
+        promise.reject();
+      });
     };
+    xhr.onerror = function() {
+      promise.reject();
+    }
     xhr.send();
+    return promise;
   }
 
   function cloneApp(manifestUrl) {
-    var xhr = new XMLHttpRequest();
+    var xhr = new XMLHttpRequest(),
+      promise = promising();
     xhr.open('GET', manifestUrl, true);
     xhr.onload = function() {
-      var obj = {};
-      try {
-        obj = JSON.parse(xhr.responseText);
-      } catch (e) {
+      var urlParts, assetBase, numDone, i;
+      if (xhr.response === null) {
+        promise.reject('no JSON manifest at '+manifestUrl);
+        return;
       }
-      var urlParts = manifestUrl.split('/');
+      urlParts = manifestUrl.split('/');
       urlParts.pop();
-      var assetBase = urlParts.join('/')+'/';
-      if (Array.isArray(obj.assets)) {
-        for (var i=0; i<obj.assets.length; obj++) {
-          getAsset(obj.name, assetBase, obj.assets[i]);
+      assetBase = urlParts.join('/')+'/';
+      if (Array.isArray(obj.assets) && obj.assets.length >= 1) {
+        numDone = 0;
+        for (i=0; i<obj.assets.length; obj++) {
+          getAsset(obj.name, assetBase, obj.assets[i]).then(function() {
+            numDone++;
+            if (numDone === obj.assets.length) {
+              promise.fulfill();
+            }
+          }, function() {
+            promise.reject('error retrieving one of the assets');
+          }); 
         }
+      } else {
+        promise.reject('could not determine assets of '+manifestUrl);
       }
     };
+    xhr.onerror = function() {
+      promise.reject('could not fetch '+manifestUrl);
+    }
+    xhr.reponseType = 'json';
     xhr.send();
+    return promise;
   }
   
   /**
@@ -218,8 +269,8 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
    * Returns: A dictionary from string app names to objects that follow the
    *              apps/app schema defined above.
    */
-  function getAvailableApps(cb) {
-    fetchDefaultApps(function() {
+  function getAvailableApps() {
+    return fetchDefaultApps().then(function() {
       var i, availableApps = {};
       for (i in defaultApps) {
         if (!apps[i]) {
@@ -227,7 +278,7 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
         }
       }
       console.log('available apps', availableApps);
-      cb(availableApps);
+      return availableApps;
     });
   }
 

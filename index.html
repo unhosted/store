@@ -128,10 +128,11 @@ To sync your installed apps across multiple devices, <strong>connect your remote
       });
       fetchChannel();
       remoteStorage.apps.onChange(function(apps) {
+        console.log('apps changed', apps);
         refreshList(apps, remoteStorage.remote.userAddress);
         remoteStorage.apps.getAvailableApps().then(refreshInstallList);
       });
-      remoteStorage.apps.getAvailableApps().then(refreshInstallList);
+      console.log('init');
     }
     //...
     init();

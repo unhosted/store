@@ -50,9 +50,12 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
       return fetchDefaultApps();
     });
   }
-
+  var time = 0;
   function fetchDefaultApps() {
+    var thisTime = time++;
+    console.log('fetDefaultApps getting file', thisTime, time);
     return privClient.getFile('channel-url').then(function(obj) {
+      console.log('fetDefaultApps entry', obj, thisTime, time);
       var promise = promising();
       var channelUrl = obj.data;
       if (typeof channelUrl !== 'string') {
@@ -60,6 +63,7 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
         setAppChannel(channelUrl);
       }
       if (currentChannel === channelUrl) {
+        console.log('fulfilling 63');
         promise.fulfill();
         return;
       }
@@ -67,11 +71,13 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
       xhr.open('GET', channelUrl, true);
       xhr.responseType = 'json';
       xhr.onerror = function() {
+        console.log('rejecting 71');
         promise.reject('error fetching app list');
       };
       xhr.onload = function() {
         var numRunning = 0;
         if (xhr.response === null) {
+          console.log('rejecting 77');
           promise.reject('not json');
           return;
         }
@@ -82,17 +88,22 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
             defaultApps[i] = obj;
             numRunning--;
             if (numRunning === 0) {
+              console.log('zero running, fulfilling 88');
               promise.fulfill();
             }
           }, function() {
             numRunning--;
             if (numRunning === 0) {
+              console.log('zero running, fulfilling 94');
               promise.fulfill();
             }
           });
         }
         currentChannel = channelUrl;
-        promise.fulfill();
+        if (numRunning === 0) {
+          console.log('zero running, fulfilling 101');
+          promise.fulfill();
+        }
       };
       xhr.send();
       return promise;
@@ -162,6 +173,7 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
           delete apps[evt.relativePath];
         }
       }
+      console.log('calling changeHandler from change', evt);
       changeHandler(apps);
     });
     
@@ -270,14 +282,16 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
    *              apps/app schema defined above.
    */
   function getAvailableApps() {
+    console.log('getAvailableApps calling fetchDefaultApps');
     return fetchDefaultApps().then(function() {
+      console.log('fetchDefaultApps fulfilled its promise');
       var i, availableApps = {};
       for (i in defaultApps) {
         if (!apps[i]) {
           availableApps[i] = defaultApps[i];
         }
       }
-      console.log('available apps', availableApps);
+      console.log('available apps', defaultApps, availableApps);
       return availableApps;
     });
   }

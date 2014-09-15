@@ -9,8 +9,12 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
   var apps = {},
     defaultApps = {}, channelUrl, currentChannel;
   
-  var changeHandler = function() {
-    console.log('Please call remoteStorage.apps.onChange(handler)');
+  var channelChangeHandler = function() {
+    console.log('Please call remoteStorage.apps.onChannelChange(handler)');
+  };
+
+  var appsChangeHandler = function() {
+    console.log('Please call remoteStorage.apps.onAppsChange(handler)');
   };
 
   function fetchManifest(manifestUrl) {
@@ -53,9 +57,7 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
   var time = 0;
   function fetchDefaultApps() {
     var thisTime = time++;
-    console.log('fetDefaultApps getting file', thisTime, time);
     return privClient.getFile('channel-url').then(function(obj) {
-      console.log('fetDefaultApps entry', obj, thisTime, time);
       var promise = promising();
       var channelUrl = obj.data;
       if (typeof channelUrl !== 'string') {
@@ -63,7 +65,6 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
         setAppChannel(channelUrl);
       }
       if (currentChannel === channelUrl) {
-        console.log('fulfilling 63');
         promise.fulfill();
         return;
       }
@@ -71,37 +72,34 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
       xhr.open('GET', channelUrl, true);
       xhr.responseType = 'json';
       xhr.onerror = function() {
-        console.log('rejecting 71');
         promise.reject('error fetching app list');
       };
       xhr.onload = function() {
         var numRunning = 0;
         if (xhr.response === null) {
-          console.log('rejecting 77');
           promise.reject('not json');
           return;
         }
         defaultApps = {};
         for (var i in xhr.response) {
           numRunning++;
-          fillInBlanks(i, xhr.response[i]).then(function(obj) {
-            defaultApps[i] = obj;
+          fillInBlanks(i, xhr.response[i]).then((function(bindI) {
+            return function(obj) {
+              defaultApps[bindI] = obj;
+              numRunning--;
+              if (numRunning === 0) {
+                promise.fulfill();
+              }
+            };
+          })(i), function() {
             numRunning--;
             if (numRunning === 0) {
-              console.log('zero running, fulfilling 88');
-              promise.fulfill();
-            }
-          }, function() {
-            numRunning--;
-            if (numRunning === 0) {
-              console.log('zero running, fulfilling 94');
               promise.fulfill();
             }
           });
         }
         currentChannel = channelUrl;
         if (numRunning === 0) {
-          console.log('zero running, fulfilling 101');
           promise.fulfill();
         }
       };
@@ -141,11 +139,29 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
   }
 
   /**
-   * Function: remoteStorage.apps.onChange
+   * Function: remoteStorage.apps.onChannelChange
    *
    * Set the change event handler. This will be called, with the
-   * dictionary of installed apps as the only argument, whenever the
-   * list of installed apps changes. Example:
+   * app channel URL as the only argument, on page load and then
+   * whenever it changes. Example:
+   *
+   * remoteStorage.apps.onChannelChange(function(url) {
+   *   myChannelUrlInput.value = url;
+   * });
+   *
+   * Parameters:
+   *   handler - a Function that takes a dictionary of apps as its only argument
+   */
+  function onChannelChange(handler) {
+    channelChangeHandler = handler;
+  }
+
+  /**
+   * Function: remoteStorage.apps.onAppsChange
+   *
+   * Set the change event handler. This will be called, with the
+   * dictionary of installed apps as the only argument, once on page load,
+   * and then whenever the list of installed apps changes. Example:
    *
    * remoteStorage.apps.onChange(function(apps) {
    *   myAppsView.reset();
@@ -158,23 +174,24 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
    * Parameters:
    *   handler - a Function that takes a dictionary of apps as its only argument
    */
-  function onChange(handler) {
-    changeHandler = handler;
+  function onAppsChange(handler) {
+    appsChangeHandler = handler;
   }
 
   function init() {
     RemoteStorage.config.changeEvents.window = true;
     privClient.cache('', 'ALL');
     privClient.on('change', function(evt) {
-      if (evt.relativePath !== 'channel-url') {
+      if (evt.relativePath === 'channel-url') {
+        channelChangeHandler(evt.newValue);
+      } else {
         if (evt.newValue) {
           apps[evt.relativePath] = evt.newValue;
         } else {
           delete apps[evt.relativePath];
         }
       }
-      console.log('calling changeHandler from change', evt);
-      changeHandler(apps);
+      appsChangeHandler(apps);
     });
     
     /**
@@ -282,16 +299,13 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
    *              apps/app schema defined above.
    */
   function getAvailableApps() {
-    console.log('getAvailableApps calling fetchDefaultApps');
     return fetchDefaultApps().then(function() {
-      console.log('fetchDefaultApps fulfilled its promise');
       var i, availableApps = {};
       for (i in defaultApps) {
         if (!apps[i]) {
           availableApps[i] = defaultApps[i];
         }
       }
-      console.log('available apps', defaultApps, availableApps);
       return availableApps;
     });
   }
@@ -301,7 +315,8 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
 
   return {
     exports: {
-      onChange: onChange,
+      onChannelChange: onChannelChange,
+      onAppsChange: onAppsChange,
       setAppChannel: setAppChannel,
       installApp: installApp,
       uninstallApp: uninstallApp,

@@ -16,7 +16,7 @@
         </a>
        <p>
          App channel:
-         <input id="channel-url-input" style="width:25em" value="https://apps.unhosted.org/defaultApps.json"
+         <input id="channel-url-input" style="width:25em"
              onkeydown="if(event.keyCode === 13){fetchChannel();}"/>
          <input id="channel-url-button" type="submit" value="update" onclick="fetchChannel();"/>
         </p>
@@ -105,7 +105,6 @@ To sync your installed apps across multiple devices, <strong>connect your remote
     function fetchChannel() {
       try {
         remoteStorage.apps.setAppChannel(document.getElementById('channel-url-input').value).then(function(obj) {
-          console.log('app channel set', obj);
           document.getElementById('channel-url-button').value = 'update';
         }, function() {
           document.getElementById('channel-url-button').value = '(failed)';
@@ -126,13 +125,14 @@ To sync your installed apps across multiple devices, <strong>connect your remote
           }
         });
       });
-      fetchChannel();
-      remoteStorage.apps.onChange(function(apps) {
-        console.log('apps changed', apps);
+      remoteStorage.apps.onChannelChange(function(url) {
+        document.getElementById('channel-url-input').value = url;
+        fetchChannel();
+      });
+      remoteStorage.apps.onAppsChange(function(apps, appChannelUrl) {
         refreshList(apps, remoteStorage.remote.userAddress);
         remoteStorage.apps.getAvailableApps().then(refreshInstallList);
       });
-      console.log('init');
     }
     //...
     init();

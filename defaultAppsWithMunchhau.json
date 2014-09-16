@@ -41,5 +41,8 @@
   "todo": {
     "href": "https://todomvc.5apps.com/labs/architecture-examples/remotestorage/"
   },
-  "vidmarks": {}
+  "vidmarks": {},
+  "Munchhau": {
+    "manifest": "munchhau.manifest"
+  }
 }

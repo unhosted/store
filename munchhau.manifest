@@ -1,4 +1,6 @@
 {
-  "name": "munchhau,
+  "name": "Munchhau",
+  "href": "https://myfavoritedrinks.5apps.com/",
+  "img": "/img/music.png",
   "assets": ["test.html", "test.js"]
 }

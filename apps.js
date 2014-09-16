@@ -21,13 +21,16 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
     var promise = promising(),
     xhr = new XMLHttpRequest();
     xhr.open('GET', manifestUrl, true);
-    xhr.responseType = 'json';
+    //xhr.responseType = 'json';
     xhr.onload = function() {
-      if (xhr.response === null) {
-        promise.reject('could not fetch JSON document from ' + manifestUrl);
-      } else {
-        promise.fulfill(xhr.response);
+      var obj;
+      try {
+        obj = JSON.parse(xhr.response);
+      } catch (e) {
+        promise.reject('could not parse JSON document from ' + manifestUrl);
+        return;
       }
+      promise.fulfill(obj);
     };
     xhr.onerror = function() {
       promise.reject('could not fetch ' + manifestUrl);

@@ -39,31 +39,35 @@ To sync your installed apps across multiple devices, <strong>connect your remote
   <script src="apps.js"></script>
   <script>
     function createLi(key, obj, userAddress) {
-      var launchParam = '', uninstallButton = '';
+      var launchParam = '', cloneButton = '', uninstallButton = '';
       if (userAddress) {
         launchParam = '#remotestorage='+encodeURIComponent(userAddress);
       }
+      console.log(JSON.stringify(obj));
+      if (obj.assets) {
+        cloneButton = ' (<span class="clone-button" onclick="cloneApp(\''+obj.name+'\');"><strong>&plus;</strong></span>)';
+      }
       uninstallButton = ' (<span class="uninstall-button" onclick="uninstallApp(\''+obj.name+'\');"><strong>&times;</strong></span>)';
       return '<li>'
-        +(obj.img === 'none' ? '' :
+        + (obj.img === 'none' ? '' :
           '<a href="'
-          +obj.href+launchParam+'"><img src="'
-          +obj.img+'" /></a>'
+          + obj.href + launchParam + '"><img src="'
+          + obj.img + '" /></a>'
         )
-        +'<p><a href="'
-        +obj.href+launchParam+'">'
-        +obj.name+'</a>'
-        +uninstallButton+'</p></li>';
+        + '<p><a href="'
+        + obj.href + launchParam + '">'
+        + obj.name + '</a>'
+        + cloneButton + uninstallButton + '</p></li>';
     }
     function createInstallLi(key, obj, userAddress) {
-      return '<li onclick="installApp(\''+obj.name+'\');">'
-        +(obj.img === 'none' ? '' :
+      return '<li onclick="installApp(\'' + obj.name + '\');">'
+        + (obj.img === 'none' ? '' :
           '<img src="'
-          +obj.img+'" />'
+          + obj.img + '" />'
         )
-        +'<p>'
-        +obj.name
-        +'</p></li>';
+        + '<p>'
+        + obj.name
+        + '</p></li>';
     }
     function refreshList(apps, userAddress) {
       var innerHTML = '';
@@ -102,6 +106,9 @@ To sync your installed apps across multiple devices, <strong>connect your remote
     function uninstallApp(name) {
       remoteStorage.apps.uninstallApp(name);
     }
+    function cloneApp(name) {
+      remoteStorage.apps.cloneApp(name);
+    }
     function fetchChannel() {
       try {
         remoteStorage.apps.setAppChannel(document.getElementById('channel-url-input').value).then(function(obj) {
@@ -136,5 +143,12 @@ To sync your installed apps across multiple devices, <strong>connect your remote
     }
     //...
     init();
+    function d(p) {
+      p.then(function(a) {
+        console.log('success', a);
+      }, function(a) {
+        console.log('failure', a);
+      });
+    }
   </script>
 </html>

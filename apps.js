@@ -8,7 +8,7 @@
 RemoteStorage.defineModule('apps', function(privClient, pubClient) {
   var apps = {},
     defaultApps = {}, channelUrl, currentChannel;
-  
+
   var channelChangeHandler = function() {
     console.log('Please call remoteStorage.apps.onChannelChange(handler)');
   };
@@ -196,7 +196,7 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
       }
       appsChangeHandler(apps);
     });
-    
+
     /**
      * Schema: apps/app
      *
@@ -236,43 +236,25 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
     return promise;
   }
 
-  function cloneApp(manifestUrl) {
-    var xhr = new XMLHttpRequest(),
-      promise = promising();
-    xhr.open('GET', manifestUrl, true);
-    xhr.onload = function() {
-      var urlParts, assetBase, numDone, i;
-      if (xhr.response === null) {
-        promise.reject('no JSON manifest at '+manifestUrl);
-        return;
+  function cloneApp(name) {
+    var promise = promising(), numDone = 0, i;
+    if (Array.isArray(apps[name].assets) && apps[name].assets.length >= 1) {
+      for (i=0; i<apps[name].assets.length; i++) {
+        getAsset(name, apps[name].href, apps[name].assets[i]).then(function() {
+          numDone++;
+          if (numDone === apps[name].assets.length) {
+            promise.fulfill();
+          }
+        }, function() {
+          promise.reject('error retrieving one of the assets');
+        });
       }
-      urlParts = manifestUrl.split('/');
-      urlParts.pop();
-      assetBase = urlParts.join('/')+'/';
-      if (Array.isArray(obj.assets) && obj.assets.length >= 1) {
-        numDone = 0;
-        for (i=0; i<obj.assets.length; obj++) {
-          getAsset(obj.name, assetBase, obj.assets[i]).then(function() {
-            numDone++;
-            if (numDone === obj.assets.length) {
-              promise.fulfill();
-            }
-          }, function() {
-            promise.reject('error retrieving one of the assets');
-          }); 
-        }
-      } else {
-        promise.reject('could not determine assets of '+manifestUrl);
-      }
-    };
-    xhr.onerror = function() {
-      promise.reject('could not fetch '+manifestUrl);
+    } else {
+      promise.reject('could not determine assets of ' + name);
     }
-    xhr.reponseType = 'json';
-    xhr.send();
     return promise;
   }
-  
+
   /**
    * Function: remoteStorage.apps.getInstalledApps
    *
@@ -287,8 +269,8 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
   function getInstalledApps() {
     return apps;
   }
- 
-  
+
+
   /**
    * Function: remoteStorage.apps.getAvailableApps
    *

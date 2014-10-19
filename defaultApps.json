@@ -11,7 +11,18 @@
   "dogfeed": {},
   "dogtalk": {},
   "drinks": {
-    "href": "https://myfavoritedrinks.5apps.com/"
+    "href": "https://myfavoritedrinks.5apps.com/",
+    "img": "https://5apps-application-icons.s3.amazonaws.com/512411dfbc73cb2136000003/icon_x128.png",
+    "assets": [
+      "app.js",
+      "drink.jpg",
+      "index.html",
+      "manifest.webapp",
+      "README.md",
+      "remotestorage.js",
+      "remotestorage-module.js",
+      "style.css"
+    ]
   },
   "dspace-client": {
     "href": "https://dspace-nilclass.5apps.com/",

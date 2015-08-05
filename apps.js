@@ -64,7 +64,7 @@ RemoteStorage.defineModule('apps', function(privClient, pubClient) {
       var promise = promising();
       var channelUrl = obj.data;
       if (typeof channelUrl !== 'string') {
-        channelUrl = 'https://store.unhosted.org/defaultApps.json';
+        channelUrl = 'https://apps.unhosted.org/defaultApps.json';
         setAppChannel(channelUrl);
       }
       if (currentChannel === channelUrl) {
